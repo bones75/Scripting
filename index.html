@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Contabilità 🌻</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5836/5836611.png">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAHQo-J8K54vXUhvGpYQcIG3srUI8lYR5c",
+            authDomain: "contabilita-bf865.firebaseapp.com",
+            projectId: "contabilita-bf865",
+            storageBucket: "contabilita-bf865.firebasestorage.app",
+            messagingSenderId: "1074422505478",
+            appId: "1:1074422505478:web:c2b99419a10e1d9f5f6387",
+            measurementId: "G-T6X8J09ZZ7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const transazioniRef = collection(db, "transazioni");
+
+        window.registraInCloud = async (dati) => {
+            await addDoc(transazioniRef, { ...dati, timestamp: Date.now() });
+        };
+
+        window.eliminaDalCloud = async (id) => {
+            if(confirm("Eliminare definitivamente?")) await deleteDoc(doc(db, "transazioni", id));
+        };
+
+        onSnapshot(query(transazioniRef, orderBy("data", "desc")), (snapshot) => {
+            const dati = [];
+            snapshot.forEach(doc => dati.push({ id: doc.id, ...doc.data() }));
+            window.mostraDati(dati);
+        });
+    </script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+            background: #f4f7f6 url('https://upload.wikimedia.org/wikipedia/commons/4/46/Vincent_Willem_van_Gogh_127.jpg') fixed center/cover;
+            padding: 10px;
+            color: #333;
+        }
+        
+        .container { 
+            max-width: 500px; 
+            margin: auto; 
+            background: rgba(255, 255, 255, 0.92); 
+            backdrop-filter: blur(15px); 
+            padding: 15px; 
+            border-radius: 30px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-top: env(safe-area-inset-top); /* Per iPhone con notch */
+        }
+        
+        .bilancio-box { 
+            text-align: center; 
+            font-size: 2em; 
+            font-weight: 800; 
+            padding: 20px; 
+            background: white; 
+            border-radius: 20px; 
+            border: 2px solid #f1c40f; 
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .modulo { 
+            padding: 15px; 
+            border-radius: 20px; 
+            background: white; 
+            margin-bottom: 15px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .modulo-entrate { border-left: 8px solid #27ae60; }
+        .modulo-uscite { border-left: 8px solid #e74c3c; }
+
+        h3 { font-size: 1.1em; margin-bottom: 10px; color: #555; }
+
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 5px 0; 
+            border: 1px solid #eee; 
+            border-radius: 12px; 
+            background: #f9f9f9;
+            font-size: 16px; /* Evita zoom automatico su iPhone */
+        }
+        
+        .form-row { display: flex; gap: 8px; }
+
+        .btn { 
+            width: 100%; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            font-size: 1em; 
+            margin-top: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        /* LISTA TRANSAZIONI IPHONE STYLE */
+        .sezione-lista { margin-top: 10px; }
+        .card-transazione {
+            background: white;
+            padding: 12px;
+            border-radius: 15px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+        
+        .info-left { display: flex; align-items: center; gap: 10px; }
+        .clip-btn { font-size: 1.4em; padding: 5px; }
+        .testi small { color: #999; font-size: 0.8em; }
+        .testi p { font-weight: 600; font-size: 0.95em; color: #2c3e50; }
+
+        .importo-badge { font-weight: 800; font-size: 1em; }
+        .val-pos { color: #27ae60; }
+        .val-neg { color: #e74c3c; }
+
+        .toolbar-mobile { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 20px;
+        }
+        .btn-small { flex: 1; padding: 10px; font-size: 0.8em; background: #2c3e50; color: white; border-radius: 10px; border:none;}
+
+        #search { margin-bottom: 10px; border: 2px solid #f1c40f; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="text-align: center; font-size: 1.2em; margin-bottom: 10px;">🌻 Contabilità</div>
+    <div class="bilancio-box" id="saldo-totale">€ 0.00</div>
+
+    <div class="modulo modulo-entrate">
+        <h3>✨ Entrata</h3>
+        <form id="form-in">
+            <input type="text" id="desc-in" placeholder="Sorgente (es. Stipendio)" required>
+            <div class="form-row">
+                <input type="number" step="0.01" id="val-in" placeholder="Importo €" required>
+                <select id="cat-in"></select>
+            </div>
+            <input type="url" id="link-in" placeholder="📎 Link Drive">
+            <button type="submit" class="btn" style="background:#27ae60; color:white;">Salva Entrata</button>
+        </form>
+    </div>
+
+    <div class="modulo modulo-uscite">
+        <h3>🥀 Uscita</h3>
+        <form id="form-out">
+            <input type="text" id="desc-out" placeholder="Spesa (es. Spesa Coop)" required>
+            <div class="form-row">
+                <input type="number" step="0.01" id="val-out" placeholder="Importo €" required>
+                <select id="cat-out"></select>
+            </div>
+            <button type="submit" class="btn" style="background:#e74c3c; color:white;">Annota Spesa</button>
+        </form>
+    </div>
+
+    <input type="text" id="search" placeholder="🔍 Cerca transazione..." onkeyup="filtraLocalmente()">
+    
+    <div class="sezione-lista" id="lista-voci"></div>
+
+    <div class="toolbar-mobile">
+        <button class="btn-small" onclick="esportaPDF()">PDF 📄</button>
+        <button class="btn-small" onclick="esportaCSV()">CSV 💾</button>
+    </div>
+</div>
+
+<script>
+    let datiGlobali = [];
+    const categorie = ["Stipendio", "Toeletta", "Parrucchiere", "Estetista", "Spesa Coop", "Spesa Conad", "Spesa Varia", "Affitto", "Bollette", "Generale"];
+
+    function inizializza() {
+        const selects = [document.getElementById('cat-in'), document.getElementById('cat-out')];
+        selects.forEach(s => categorie.sort().forEach(c => s.add(new Option(c, c))));
+        document.getElementById('cat-in').value = "Stipendio";
+        document.getElementById('cat-out').value = "Generale";
+    }
+
+    window.mostraDati = (dati) => { datiGlobali = dati; filtraLocalmente(); };
+
+    function filtraLocalmente() {
+        const s = document.getElementById('search').value.toLowerCase();
+        const lista = document.getElementById('lista-voci');
+        lista.innerHTML = '';
+        let saldo = 0;
+
+        datiGlobali.filter(t => t.descrizione.toLowerCase().includes(s) || t.categoria.toLowerCase().includes(s))
+        .forEach(t => {
+            saldo += t.importo;
+            const card = document.createElement('div');
+            card.className = 'card-transazione';
+            card.innerHTML = `
+                <div class="info-left">
+                    ${t.link ? `<span class="clip-btn" onclick="window.open('${t.link}', '_blank')">📎</span>` : '<span style="width:25px"></span>'}
+                    <div class="testi">
+                        <small>${t.data} | ${t.categoria}</small>
+                        <p>${t.descrizione}</p>
+                    </div>
+                </div>
+                <div style="text-align:right; display:flex; align-items:center; gap:10px;">
+                    <span class="importo-badge ${t.importo >= 0 ? 'val-pos' : 'val-neg'}">
+                        ${t.importo >= 0 ? '+' : ''}${t.importo.toFixed(2)}€
+                    </span>
+                    <span style="color:#ddd; font-size:1.2em;" onclick="window.eliminaDalCloud('${t.id}')">✕</span>
+                </div>`;
+            lista.appendChild(card);
+        });
+        document.getElementById('saldo-totale').innerText = `€ ${saldo.toFixed(2)}`;
+    }
+
+    document.getElementById('form-in').onsubmit = async (e) => {
+        e.preventDefault();
+        await window.registraInCloud({ descrizione: document.getElementById('desc-in').value, importo: parseFloat(document.getElementById('val-in').value), data: new Date().toISOString().split('T')[0], categoria: document.getElementById('cat-in').value, link: document.getElementById('link-in').value || '', tipo: 'IN' });
+        e.target.reset();
+    };
+
+    document.getElementById('form-out').onsubmit = async (e) => {
+        e.preventDefault();
+        await window.registraInCloud({ descrizione: document.getElementById('desc-out').value, importo: -Math.abs(parseFloat(document.getElementById('val-out').value)), data: new Date().toISOString().split('T')[0], categoria: document.getElementById('cat-out').value, link: '', tipo: 'OUT' });
+        e.target.reset();
+    };
+
+    function esportaPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text("Contabilità 🌻", 14, 15);
+        const rows = datiGlobali.map(t => [t.data, t.categoria, t.descrizione, t.importo.toFixed(2) + " €"]);
+        doc.autoTable({ head: [['Data', 'Categoria', 'Descrizione', 'Importo']], body: rows, startY: 20 });
+        doc.save("conto.pdf");
+    }
+
+    function esportaCSV() {
+        let csv = "Data,Categoria,Descrizione,Importo\n";
+        datiGlobali.forEach(t => csv += `${t.data},${t.categoria},${t.descrizione},${t.importo}\n`);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'conto.csv'; a.click();
+    }
+
+    inizializza();
+</script>
+</body>
+</html>
