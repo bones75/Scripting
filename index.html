@@ -2,19 +2,15 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Contabilità 🌻</title>
+    <title>Gestione Cloud PC - Fixed 🌻</title>
     
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5836/5836611.png">
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAHQo-J8K54vXUhvGpYQcIG3srUI8lYR5c",
@@ -35,7 +31,7 @@
         };
 
         window.eliminaDalCloud = async (id) => {
-            if(confirm("Eliminare definitivamente?")) await deleteDoc(doc(db, "transazioni", id));
+            if(confirm("Eliminare?")) await deleteDoc(doc(db, "transazioni", id));
         };
 
         onSnapshot(query(transazioniRef, orderBy("data", "desc")), (snapshot) => {
@@ -46,216 +42,181 @@
     </script>
 
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
-            background: #f4f7f6 url('https://upload.wikimedia.org/wikipedia/commons/4/46/Vincent_Willem_van_Gogh_127.jpg') fixed center/cover;
-            padding: 10px;
-            color: #333;
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f0f2f5 url('https://upload.wikimedia.org/wikipedia/commons/4/46/Vincent_Willem_van_Gogh_127.jpg') fixed center/cover;
+            padding: 20px;
         }
         
+        /* Contenitore principale centrato e contenuto */
         .container { 
-            max-width: 500px; 
-            margin: auto; 
-            background: rgba(255, 255, 255, 0.92); 
-            backdrop-filter: blur(15px); 
-            padding: 15px; 
-            border-radius: 30px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            margin-top: env(safe-area-inset-top); /* Per iPhone con notch */
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: rgba(255, 255, 255, 0.97); 
+            padding: 40px; 
+            border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
         }
         
+        /* Header con Titolo e Totale centrati */
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 30px; 
+            width: 100%;
+        }
+
         .bilancio-box { 
-            text-align: center; 
-            font-size: 2em; 
+            font-size: 2.2em; 
             font-weight: 800; 
+            padding: 10px 25px; 
+            border: 3px solid #f1c40f; 
+            border-radius: 15px;
+            background: white;
+        }
+
+        /* Griglia dei moduli - Impedisce la fuoriuscita */
+        .grid-moduli { 
+            display: flex; 
+            gap: 20px; 
+            margin-bottom: 30px;
+            width: 100%;
+        }
+        
+        .modulo { 
+            flex: 1; /* Divide lo spazio equamente */
             padding: 20px; 
             background: white; 
-            border-radius: 20px; 
-            border: 2px solid #f1c40f; 
-            margin-bottom: 15px;
-            color: #2c3e50;
-        }
-
-        .modulo { 
-            padding: 15px; 
-            border-radius: 20px; 
-            background: white; 
-            margin-bottom: 15px; 
+            border-radius: 15px; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border-top: 5px solid transparent;
         }
-        .modulo-entrate { border-left: 8px solid #27ae60; }
-        .modulo-uscite { border-left: 8px solid #e74c3c; }
+        .modulo-in { border-top-color: #27ae60; }
+        .modulo-out { border-top-color: #e74c3c; }
 
-        h3 { font-size: 1.1em; margin-bottom: 10px; color: #555; }
-
+        .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
         input, select { 
-            width: 100%; 
-            padding: 12px; 
-            margin: 5px 0; 
-            border: 1px solid #eee; 
-            border-radius: 12px; 
-            background: #f9f9f9;
-            font-size: 16px; /* Evita zoom automatico su iPhone */
+            width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 8px; font-size: 14px; 
         }
         
-        .form-row { display: flex; gap: 8px; }
-
-        .btn { 
-            width: 100%; 
-            padding: 14px; 
-            border: none; 
-            border-radius: 12px; 
-            font-weight: bold; 
-            font-size: 1em; 
-            margin-top: 5px;
-            cursor: pointer;
-            transition: 0.2s;
+        .btn-main { 
+            width: 100%; padding: 12px; border: none; border-radius: 8px; 
+            color: white; font-weight: bold; cursor: pointer; margin-top: 10px;
         }
 
-        /* LISTA TRANSAZIONI IPHONE STYLE */
-        .sezione-lista { margin-top: 10px; }
-        .card-transazione {
-            background: white;
-            padding: 12px;
-            border-radius: 15px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid rgba(0,0,0,0.03);
-        }
+        /* Tabella Rigorosa */
+        .sezione-lista { width: 100%; background: white; border-radius: 15px; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th { text-align: left; padding: 12px; border-bottom: 2px solid #f1f1f1; color: #999; font-size: 0.8em; }
+        td { padding: 12px; border-bottom: 1px solid #f9f9f9; word-wrap: break-word; }
         
-        .info-left { display: flex; align-items: center; gap: 10px; }
-        .clip-btn { font-size: 1.4em; padding: 5px; }
-        .testi small { color: #999; font-size: 0.8em; }
-        .testi p { font-weight: 600; font-size: 0.95em; color: #2c3e50; }
+        .val-pos { color: #27ae60; font-weight: bold; }
+        .val-neg { color: #e74c3c; font-weight: bold; }
 
-        .importo-badge { font-weight: 800; font-size: 1em; }
-        .val-pos { color: #27ae60; }
-        .val-neg { color: #e74c3c; }
-
-        .toolbar-mobile { 
-            display: flex; 
-            gap: 10px; 
-            margin-top: 20px;
-        }
-        .btn-small { flex: 1; padding: 10px; font-size: 0.8em; background: #2c3e50; color: white; border-radius: 10px; border:none;}
-
-        #search { margin-bottom: 10px; border: 2px solid #f1c40f; }
+        .toolbar { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .btn-tool { padding: 8px 15px; border-radius: 8px; border: none; color: white; cursor: pointer; font-size: 0.9em; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="text-align: center; font-size: 1.2em; margin-bottom: 10px;">🌻 Contabilità</div>
-    <div class="bilancio-box" id="saldo-totale">€ 0.00</div>
-
-    <div class="modulo modulo-entrate">
-        <h3>✨ Entrata</h3>
-        <form id="form-in">
-            <input type="text" id="desc-in" placeholder="Sorgente (es. Stipendio)" required>
-            <div class="form-row">
-                <input type="number" step="0.01" id="val-in" placeholder="Importo €" required>
-                <select id="cat-in"></select>
-            </div>
-            <input type="url" id="link-in" placeholder="📎 Link Drive">
-            <button type="submit" class="btn" style="background:#27ae60; color:white;">Salva Entrata</button>
-        </form>
+    <div class="header">
+        <h1>🌻 Gestione Cloud</h1>
+        <div class="bilancio-box" id="saldo-totale">€ 0.00</div>
     </div>
 
-    <div class="modulo modulo-uscite">
-        <h3>🥀 Uscita</h3>
-        <form id="form-out">
-            <input type="text" id="desc-out" placeholder="Spesa (es. Spesa Coop)" required>
-            <div class="form-row">
-                <input type="number" step="0.01" id="val-out" placeholder="Importo €" required>
-                <select id="cat-out"></select>
-            </div>
-            <button type="submit" class="btn" style="background:#e74c3c; color:white;">Annota Spesa</button>
-        </form>
+    <div class="grid-moduli">
+        <div class="modulo modulo-in">
+            <h3 style="color:#27ae60; margin-bottom:15px;">✨ Entrata</h3>
+            <form id="form-in">
+                <div class="form-row">
+                    <input type="text" id="desc-in" placeholder="Sorgente" required>
+                    <input type="number" step="0.01" id="val-in" placeholder="€" required>
+                </div>
+                <select id="cat-in" style="margin-bottom:10px;"></select>
+                <button type="submit" class="btn-main" style="background:#27ae60;">Salva Entrata</button>
+            </form>
+        </div>
+
+        <div class="modulo modulo-out">
+            <h3 style="color:#e74c3c; margin-bottom:15px;">🥀 Uscita</h3>
+            <form id="form-out">
+                <div class="form-row">
+                    <input type="text" id="desc-out" placeholder="Spesa" required>
+                    <input type="number" step="0.01" id="val-out" placeholder="€" required>
+                </div>
+                <select id="cat-out" style="margin-bottom:10px;"></select>
+                <button type="submit" class="btn-main" style="background:#e74c3c;">Annota Spesa</button>
+            </form>
+        </div>
     </div>
 
-    <input type="text" id="search" placeholder="🔍 Cerca transazione..." onkeyup="filtraLocalmente()">
-    
-    <div class="sezione-lista" id="lista-voci"></div>
+    <div class="sezione-lista">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:15%;">Data</th>
+                    <th style="width:20%;">Categoria</th>
+                    <th>Descrizione</th>
+                    <th style="width:15%; text-align:right;">Importo</th>
+                    <th style="width:50px;"></th>
+                </tr>
+            </thead>
+            <tbody id="tabella-body"></tbody>
+        </table>
 
-    <div class="toolbar-mobile">
-        <button class="btn-small" onclick="esportaPDF()">PDF 📄</button>
-        <button class="btn-small" onclick="esportaCSV()">CSV 💾</button>
+        <div class="toolbar">
+            <button class="btn-tool" style="background:#34495e;" onclick="esportaPDF()">Esporta PDF</button>
+            <button class="btn-tool" style="background:#8e44ad;" onclick="document.getElementById('input-file').click()">Importa Access</button>
+            <input type="file" id="input-file" style="display:none" accept=".xlsx, .csv" onchange="importaExcel(event)">
+        </div>
     </div>
 </div>
 
 <script>
     let datiGlobali = [];
-    const categorie = ["Stipendio", "Toeletta", "Parrucchiere", "Estetista", "Spesa Coop", "Spesa Conad", "Spesa Varia", "Affitto", "Bollette", "Generale"];
+    const categorie = ["Stipendio", "Toeletta", "Spesa", "Affitto", "Bollette", "Generale"];
 
     function inizializza() {
         const selects = [document.getElementById('cat-in'), document.getElementById('cat-out')];
-        selects.forEach(s => categorie.sort().forEach(c => s.add(new Option(c, c))));
-        document.getElementById('cat-in').value = "Stipendio";
-        document.getElementById('cat-out').value = "Generale";
+        selects.forEach(s => categorie.forEach(c => s.add(new Option(c, c))));
     }
 
-    window.mostraDati = (dati) => { datiGlobali = dati; filtraLocalmente(); };
+    window.mostraDati = (dati) => { datiGlobali = dati; render(); };
 
-    function filtraLocalmente() {
-        const s = document.getElementById('search').value.toLowerCase();
-        const lista = document.getElementById('lista-voci');
-        lista.innerHTML = '';
+    function render() {
+        const body = document.getElementById('tabella-body');
+        body.innerHTML = '';
         let saldo = 0;
 
-        datiGlobali.filter(t => t.descrizione.toLowerCase().includes(s) || t.categoria.toLowerCase().includes(s))
-        .forEach(t => {
+        datiGlobali.forEach(t => {
             saldo += t.importo;
-            const card = document.createElement('div');
-            card.className = 'card-transazione';
-            card.innerHTML = `
-                <div class="info-left">
-                    ${t.link ? `<span class="clip-btn" onclick="window.open('${t.link}', '_blank')">📎</span>` : '<span style="width:25px"></span>'}
-                    <div class="testi">
-                        <small>${t.data} | ${t.categoria}</small>
-                        <p>${t.descrizione}</p>
-                    </div>
-                </div>
-                <div style="text-align:right; display:flex; align-items:center; gap:10px;">
-                    <span class="importo-badge ${t.importo >= 0 ? 'val-pos' : 'val-neg'}">
-                        ${t.importo >= 0 ? '+' : ''}${t.importo.toFixed(2)}€
-                    </span>
-                    <span style="color:#ddd; font-size:1.2em;" onclick="window.eliminaDalCloud('${t.id}')">✕</span>
-                </div>`;
-            lista.appendChild(card);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${t.data}</td>
+                <td><span style="font-size:12px; background:#f4f4f4; padding:2px 6px; border-radius:4px;">${t.categoria}</span></td>
+                <td>${t.descrizione}</td>
+                <td style="text-align:right;" class="${t.importo >= 0 ? 'val-pos' : 'val-neg'}">${t.importo.toFixed(2)}€</td>
+                <td><button onclick="window.eliminaDalCloud('${t.id}')" style="border:none; background:none; color:#ccc; cursor:pointer;">✕</button></td>
+            `;
+            body.appendChild(tr);
         });
         document.getElementById('saldo-totale').innerText = `€ ${saldo.toFixed(2)}`;
     }
 
     document.getElementById('form-in').onsubmit = async (e) => {
         e.preventDefault();
-        await window.registraInCloud({ descrizione: document.getElementById('desc-in').value, importo: parseFloat(document.getElementById('val-in').value), data: new Date().toISOString().split('T')[0], categoria: document.getElementById('cat-in').value, link: document.getElementById('link-in').value || '', tipo: 'IN' });
+        await window.registraInCloud({ descrizione: document.getElementById('desc-in').value, importo: parseFloat(document.getElementById('val-in').value), data: new Date().toISOString().split('T')[0], categoria: document.getElementById('cat-in').value });
         e.target.reset();
     };
 
     document.getElementById('form-out').onsubmit = async (e) => {
         e.preventDefault();
-        await window.registraInCloud({ descrizione: document.getElementById('desc-out').value, importo: -Math.abs(parseFloat(document.getElementById('val-out').value)), data: new Date().toISOString().split('T')[0], categoria: document.getElementById('cat-out').value, link: '', tipo: 'OUT' });
+        await window.registraInCloud({ descrizione: document.getElementById('desc-out').value, importo: -Math.abs(parseFloat(document.getElementById('val-out').value)), data: new Date().toISOString().split('T')[0], categoria: document.getElementById('cat-out').value });
         e.target.reset();
     };
-
-    function esportaPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.text("Contabilità 🌻", 14, 15);
-        const rows = datiGlobali.map(t => [t.data, t.categoria, t.descrizione, t.importo.toFixed(2) + " €"]);
-        doc.autoTable({ head: [['Data', 'Categoria', 'Descrizione', 'Importo']], body: rows, startY: 20 });
-        doc.save("conto.pdf");
-    }
-
-    function esportaCSV() {
-        let csv = "Data,Categoria,Descrizione,Importo\n";
-        datiGlobali.forEach(t => csv += `${t.data},${t.categoria},${t.descrizione},${t.importo}\n`);
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'conto.csv'; a.click();
-    }
 
     inizializza();
 </script>
